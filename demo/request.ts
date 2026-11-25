@@ -1,4 +1,5 @@
-import {validateFilters} from "../lib/contracts.ts";
+import {ALL_FIELDS,isBareListing,validateFilters,wantsAllListingFields} from "../lib/contracts.ts";
+import {amountOnlyQuestion,amountQueryFilters,amountResultMessage,projectAmountCondition} from "../lib/amount-query.ts";
 import {DATASET_AS_OF, DATASET_COUNT} from "../lib/dataset.ts";
 import {workbookBytes, exportFilename} from "../lib/excel.ts";
 import {parseRules} from "../lib/parse.ts";
@@ -82,11 +83,18 @@ export const demoRequest: typeof fetch = async (path, init) => {
     }
     const input = JSON.parse(String(init?.body ?? "{}"));
     if (path === "/api/query") {
-      const parsed = typeof input.question === "string" ? parseRules(input.question) : null;
-      const filters = parsed ? await normalizeProjectLocation(db,parsed.filters) : validateFilters(input.filters);
+      const question=typeof input.question==="string"?input.question:"";
+      const condition=projectAmountCondition(question);
+      const amount=amountOnlyQuestion(question,condition)?condition:null;
+      const base=(amount||isBareListing(question))&&input.baseFilters?validateFilters(input.baseFilters):null;
+      const parsed=question&&!amount?parseRules(question):null;
+      let filters=amount?await amountQueryFilters(db,base,amount):
+        parsed?await normalizeProjectLocation(db,base?{...base,fields:[...ALL_FIELDS]}:parsed.filters):validateFilters(input.filters);
+      if(amount&&wantsAllListingFields(question))filters={...filters,fields:[...ALL_FIELDS]};
       const result = await runQuery(db,filters,Number(input.page ?? 1),20);
       const emptyFeedback = result.totalRows === 0 ? await emptyResultFeedback(db,filters) : undefined;
-      return Response.json({...result,parserMethod:parsed?.method ?? "manual",notes:parsed?.notes,emptyFeedback});
+      const queryMessage=amount?amountResultMessage(amount,result,!!base):undefined;
+      return Response.json({...result,parserMethod:parsed?.method??(amount?"rules":"manual"),notes:parsed?.notes,emptyFeedback,queryMessage});
     }
     if (path === "/api/export") {
       const result = await runQuery(db,input.filters,1,20,true);

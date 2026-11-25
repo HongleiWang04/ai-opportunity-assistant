@@ -7,7 +7,16 @@ export const ALL_FIELDS = ["事业群","负责人","所在团队","项目编号"
 export const YEAR_LABELS: Record<string,string> = {expected_close:"预计成交日期",created:"创建日期",bid_award:"中标时间"};
 export type YearBasis = "expected_close"|"created"|"bid_award";
 export const DEFAULT_YEAR_BASIS:YearBasis="created";
-export type Filters = {team:string|null;businessGroup:string|null;year:number|null;yearBasis:YearBasis|null;stageMin:number;stageMax:number;commitment:string|null;tender:boolean|null;owner:string|null;province:string|null;city:string|null;district:string|null;amountMin?:number|null;amountMax?:number|null;customer?:string|null;projectName?:string|null;projectId?:string|null;dateFrom?:string|null;dateTo?:string|null;missingPublishOnly?:boolean;profitStatus?:"loss"|"break_even"|"profit"|null;sortBy?:"expected_close"|"amount"|"profit";sortDirection?:"asc"|"desc";limit?:number|null;fields:string[];};
+export function isBareListing(question:string){
+  return /^(?:请|帮我|请帮我)?(?:查(?:一下|看|询|下)?(?:所有|全部)?(?:商机|项目)(?:有哪(?:些|几个)|名单|清单)?|(?:有)?哪些(?:商机|项目))[？?。！!\s]*$/.test(question.trim());
+}
+export function wantsAllListingFields(question:string){
+  const hasFieldSelection=/包含|包括|字段|列名|只要|只导出|加上|增加|添加|补上|只显示|只展示|仅显示|仅展示|显示|展示|放在前面|放到最前/.test(question);
+  const asksForList=/有哪些|哪几(?:个|条|项)|列出|清单|名单|(?:查询|查一下|查下|查找|查|查看)(?:.*(?:商机|项目))/.test(question);
+  const countOnly=/几个|多少|几条|几项|汇总|统计|占比|分布/.test(question)&&!/哪些|哪几(?:个|条|项)|列出|明细/.test(question);
+  return asksForList&&!hasFieldSelection&&!countOnly;
+}
+export type Filters = {team:string|null;businessGroup:string|null;year:number|null;yearBasis:YearBasis|null;stageMin:number;stageMax:number;commitment:string|null;tender:boolean|null;owner:string|null;province:string|null;city:string|null;district:string|null;amountMin?:number|null;amountMax?:number|null;customer?:string|null;projectName?:string|null;projectId?:string|null;dateFrom?:string|null;dateTo?:string|null;missingPublishOnly?:boolean;profitStatus?:"loss"|"break_even"|"profit"|null;sortBy?:"expected_close"|"amount"|"profit";sortDirection?:"asc"|"desc";limit?:number|null;scopeIds?:string[];fields:string[];};
 export type Parsed = {filters:Filters;method:"rules"|"qwen";notes:string[];clarification?:string;};
 export type QueryResult = {filters:Filters;fields:string[];rows:Record<string,string|number|null>[];rowIds:string[];totalRows:number;page:number;pageSize:number;totalAmount:number;tenderCount:number;asOf:string;allSimulated:true;};
 export function emptyFilters():Filters {return {team:null,businessGroup:null,year:null,yearBasis:null,stageMin:20,stageMax:80,commitment:null,tender:null,owner:null,province:null,city:null,district:null,fields:[...DEFAULT_FIELDS]};}
@@ -25,6 +34,12 @@ export function validateFilters(raw:unknown):Filters {
   if(r.tender!==undefined&&r.tender!==null){if(typeof r.tender!=="boolean")throw new Error("招投标条件格式不正确。");f.tender=r.tender;}
   for(const key of ["amountMin","amountMax"] as const){const v=r[key];if(v!==null&&v!==undefined){if(typeof v!=="number"||!Number.isFinite(v)||v<0||v>1e12||Math.abs(v*100-Math.round(v*100))>0.0001)throw new Error("金额应为非负数，单位为元，最多两位小数。");f[key]=v;}}
   if(f.amountMin!=null&&f.amountMax!=null&&f.amountMin>f.amountMax)throw new Error("金额下限不能大于上限。");
+  if(r.scopeIds!==undefined){
+    if(!Array.isArray(r.scopeIds)||r.scopeIds.length>10000||r.scopeIds.some(id=>typeof id!=="string"||!id.length||id.length>32)){
+      throw new Error("原项目清单范围不正确。");
+    }
+    f.scopeIds=[...new Set(r.scopeIds)];
+  }
   if(r.customer!=null&&r.customer!==""){if(typeof r.customer!=="string"||r.customer.length>100)throw new Error("客户名称过长或格式不正确。");f.customer=r.customer.trim();}
   for(const [key,label,maxLength] of [["projectName","项目名称",180],["projectId","项目编号",32]] as const){
     const value=r[key];

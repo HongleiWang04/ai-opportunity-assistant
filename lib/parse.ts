@@ -1,6 +1,7 @@
-import {ALL_FIELDS,DEFAULT_YEAR_BASIS,TEAM_OPTIONS,GROUPS,emptyFilters,validateFilters,type Parsed,type YearBasis} from "./contracts.ts";
+import {ALL_FIELDS,DEFAULT_YEAR_BASIS,TEAM_OPTIONS,GROUPS,emptyFilters,isBareListing,validateFilters,wantsAllListingFields,type Parsed,type YearBasis} from "./contracts.ts";
 import {explicitYearBasis} from "./year-basis.ts";
 import {prepareProjectFields,projectReference} from "./project-lookup.ts";
+import {applyAmountCondition,projectAmountCondition} from "./amount-query.ts";
 const aliases:Record<string,string[]>={"负责人":["项目负责人","负责人"],"所在团队":["所在团队","团队名称"],"项目编号":["项目编号"],"项目名称":["项目名称"],"客户名称":["客户名称"],"项目金额":["项目金额"],"预计毛利":["预计毛利"],"预计利润":["预计利润"],"项目阶段":["项目阶段","商机进度"],"预计挂网日期":["预计挂网日期","预计挂网时间"],"预计成交日期":["预计成交日期","预计成交时间"],"业绩承诺":["业绩承诺"],"是否需要招投标":["是否需要招投标","是否招投标"],"中标时间":["中标时间","中标日期"],"项目所在省":["项目所在省"],"项目所在市":["项目所在市"],"项目所在区县":["项目所在区县"],"事业群":["事业群"]};
 export function parseRules(question:string,yearHint:YearBasis|null=null):Parsed {
   const f=emptyFilters();const notes:string[]=[];
@@ -24,8 +25,12 @@ export function parseRules(question:string,yearHint:YearBasis|null=null):Parsed 
   if(stageRange){f.stageMin=Number(stageRange[1]);f.stageMax=Number(stageRange[2]);}else if(/已赢单|已成交|已签单/.test(intent)){f.stageMin=100;f.stageMax=100;}else if(/在途/.test(intent)){f.stageMin=20;f.stageMax=80;}else if(/(?:所有|全部).{0,8}商机/.test(intent)){f.stageMin=0;f.stageMax=100;}else{const single=intent.match(/(?:阶段|进度)[^\d]{0,5}(\d{1,3})\s*[%％]/);if(single)f.stageMin=f.stageMax=Number(single[1]);}
   if(fieldStart>=0){const tail=question.slice(fieldStart);const matches=[];for(const field of ALL_FIELDS){let pos=Infinity;for(const alias of aliases[field]??[field]){const i=tail.indexOf(alias);if(i>=0)pos=Math.min(pos,i);}if(pos!==Infinity)matches.push({field,pos});}if(matches.length)f.fields=matches.sort((a,b)=>a.pos-b.pos).map(x=>x.field);}
   const project=projectReference(question);
-  if(!f.team&&!f.year&&!project&&!/商机|项目清单|业务清单/.test(intent))throw new Error("请描述商机查询需求，例如：2026年民办校团队进度20%—80%的商机。");
-  return {filters:validateFilters(project?prepareProjectFields(question,{...f,...project},true):f),method:"rules",notes};
+  const amount=projectAmountCondition(intent);
+  if(!f.team&&!f.year&&!project&&!amount&&!/商机|项目清单|业务清单/.test(intent))throw new Error("请描述商机查询需求，例如：2026年民办校团队进度20%—80%的商机。");
+  if(isBareListing(question)){f.stageMin=0;f.stageMax=100;}
+  if(!project&&fieldStart<0&&wantsAllListingFields(question))f.fields=[...ALL_FIELDS];
+  const filters=project?prepareProjectFields(question,{...f,...project},true):f;
+  return {filters:amount?applyAmountCondition(filters,amount):validateFilters(filters),method:"rules",notes};
 }
 type AIEnv={QWEN_API_KEY?:string;QWEN_BASE_URL?:string;QWEN_MODEL?:string;};
 export function aiReady(env:AIEnv):boolean{return Boolean(env.QWEN_API_KEY?.trim()&&env.QWEN_BASE_URL?.trim());}
@@ -42,5 +47,8 @@ export async function parseQuestion(question:string,yearHint:YearBasis|null,env:
   if(parsed.clarification&&typeof parsed.clarification==="string")return {filters:baseline?.filters??emptyFilters(),method:"qwen",notes:[],clarification:parsed.clarification.slice(0,180)};
   const filters=parsed.filters as Partial<Parsed["filters"]>|undefined;
   if(filters&&(filters.year||filters.dateFrom||filters.dateTo))filters.yearBasis=explicitYearBasis(question)??yearHint??DEFAULT_YEAR_BASIS;
-  return {filters:validateFilters(filters),method:"qwen",notes:baseline?.notes??[]};
+  if(filters&&wantsAllListingFields(question))filters.fields=[...ALL_FIELDS];
+  const amount=projectAmountCondition(question);
+  const validated=validateFilters(filters);
+  return {filters:amount?applyAmountCondition(validated,amount):validated,method:"qwen",notes:baseline?.notes??[]};
 }

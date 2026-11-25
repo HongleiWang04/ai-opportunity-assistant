@@ -22,14 +22,14 @@ body { background: var(--canvas); }
 .sidebar-example { color: #c1c4d8; font-size: 14px; padding: 12px; }
 .sidebar-example:hover { background: #ffffff0a; color: #fff; }
 .example-glyph, .glyph-1, .glyph-2, .glyph-3 { color: #aaa0ed; }
-.history button { color: #a9aec8; font-size: 13px; }
+.history-item { display: flex; align-items: center; min-width: 0; border-radius: 8px; }
+.history-item:hover, .history-item:focus-within { background: #ffffff0d; }
+.history-query { color: #a9aec8; font-size: 13px; min-width: 0; padding-right: 0; }
+.history-query span:last-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.history-delete { flex: 0 0 30px; width: 30px; height: 30px; display: grid; place-items: center; color: #a9aec8; border-radius: 7px; }
+.history-delete:hover, .history-delete:focus-visible { background: #ffffff15; color: white; }
 .history-line { background: #777c9c; }
-.source-card { border-color: #ffffff13; background: #ffffff05; border-radius: 12px; padding: 15px 11px; }
-.source-card strong { color: #e1e2f2; font-size: 13px; }
-.source-card p { color: #989ebd; font-size: 11px; }
-.source-icon { color: #a59ae8; }
-.source-badge { display: none; }
-.sidebar-bottom { border-color: #ffffff12; margin-top: 19px; padding-bottom: 24px; }
+.sidebar-bottom { border-color: #ffffff12; margin-top: auto; padding-bottom: 24px; }
 .owner-avatar { background: #393453; border-color: #75689c55; color: #ded6ff; }
 .sidebar-bottom strong { color: #dcdeee; font-size: 13px; }
 .sidebar-bottom div span { color: #979dbb; font-size: 11px; }

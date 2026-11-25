@@ -1,13 +1,13 @@
 "use client";
 
 import {useEffect,useRef,useState,type FormEvent} from "react";
-import {Sparkles,Search,Database,FileSpreadsheet,SlidersHorizontal,Download,Check,ChevronDown,LoaderCircle,X,Building2,CalendarDays,BriefcaseBusiness,MapPin} from "lucide-react";
+import {Sparkles,Search,Database,FileSpreadsheet,SlidersHorizontal,Download,Check,ChevronDown,LoaderCircle,X,Building2,CalendarDays,BriefcaseBusiness,MapPin,Trash2} from "lucide-react";
 import {ALL_FIELDS,DEFAULT_FIELDS,DEFAULT_YEAR_BASIS,STAGES,TEAM_OPTIONS,YEAR_LABELS,emptyFilters,type Filters,type QueryResult} from "../lib/contracts.ts";
 import {DATASET_COUNT,DATASET_AS_OF} from "../lib/dataset.ts";
 import type {AgentEvent,AgentStep} from "../lib/agent-contracts.ts";
 
 type Meta={ready:boolean;recordCount:number;asOf:string;aiReady:boolean;agentReady?:boolean;};
-type Result=QueryResult&{parserMethod?:string;notes?:string[];emptyFeedback?:string};
+type Result=QueryResult&{parserMethod?:string;notes?:string[];emptyFeedback?:string;queryMessage?:string};
 type QueryResponse=Result&{needsClarification?:boolean;clarification?:string;};
 const SAMPLE="我需要一份预计2026年成交的民办校团队在途商机（商机进度为20%-80%），包含负责人、所在团队、项目名称、客户名称、是否需要招投标、预计成交日期、预计挂网日期、项目金额，导出Excel。";
 const EXAMPLES:{label:string;text:string;agentOnly?:boolean}[]=[{label:"民办校在途商机",text:SAMPLE},{label:"教育分团队导出",text:"查询教育事业群预计2026年成交的在途商机，按团队分别整理，需要招投标但缺少预计挂网日期的项目单独列出，导出Excel。",agentOnly:true},{label:"基教团队商机",text:"查询基教团队预计2026年成交的全部在途商机，进度20%至80%，导出Excel。"},{label:"医疗已赢单项目",text:"查询医疗团队2026年创建的已赢单商机，包含负责人、所在团队、项目名称、客户名称、项目金额、预计成交日期。"}];
@@ -75,7 +75,8 @@ export default function OpportunityWorkspace({request=fetch,basePath="/",publicD
     if(busy||starting)return;if(typeof input.question==="string"&&meta?.agentReady){await executeAgent(input);return;}
     setBusy(true);setError("");setClarification("");if(!keep){setResult(null);setSessionId(null);setAgentResultId(null);setAgentSteps([]);setAgentMessage("");setConversation([]);setChoices([]);}
     const queryText=typeof input.question==="string"?input.question:undefined;
-    try{const data=await post(request,"/api/query",input);if(data.needsClarification){setClarification(data.clarification??"请补充查询条件。");return;}
+    const queryInput=queryText&&result&&input.newTask!==true?{...input,baseFilters:result.filters}:input;
+    try{const data=await post(request,"/api/query",queryInput);if(data.needsClarification){setClarification(data.clarification??"请补充查询条件。");return;}
       setResult({...data,parserMethod:keep&&sessionId?"agent":data.parserMethod});setDraft(data.filters);setEdit(false);
       if(queryText){setHistory(old=>[queryText,...old.filter(x=>x!==queryText)].slice(0,3));setQuestion("");}
     }catch(e){setError((e as Error).message);}finally{setBusy(false);}
@@ -102,9 +103,13 @@ export default function OpportunityWorkspace({request=fetch,basePath="/",publicD
       <div className="nav-label">工作空间</div><div className="nav-item active"><Search size={19}/><span>商机查询</span></div>
       <section className="sidebar-section history" aria-labelledby="history-title">
         <div id="history-title" className="nav-label">历史对话</div>
-        {history.length?history.map(q=><button key={q} title={q} disabled={busy} onClick={()=>example(q)}><span className="history-line"/>{q.length>18?q.slice(0,18)+"…":q}</button>):<p className="nav-label">暂无查询记录</p>}
+        {history.length?history.map(q=>(
+          <div className="history-item" key={q}>
+            <button className="history-query" title={q} disabled={busy} onClick={()=>example(q)}><span className="history-line"/><span>{q}</span></button>
+            <button type="button" className="history-delete" aria-label={`删除历史对话：${q}`} title="删除历史对话" onClick={()=>setHistory(items=>items.filter(item=>item!==q))}><Trash2 size={15} aria-hidden="true"/></button>
+          </div>
+        )):<p className="nav-label">暂无查询记录</p>}
       </section>
-      <div className="source-card"><span className="source-icon"><Database size={19}/></span><div><strong>商机模拟数据集</strong><p>{meta?meta.recordCount.toLocaleString():DATASET_COUNT.toLocaleString()}条商机 · 2024年至今</p></div><span className="source-badge">演示</span></div>
       <div className="sidebar-bottom"><span className="owner-avatar">HL</span><div><strong>个人项目工作空间</strong><span>所有业务数据均为模拟</span></div></div>
     </aside>
     <div className="main-shell">
@@ -114,9 +119,9 @@ export default function OpportunityWorkspace({request=fetch,basePath="/",publicD
         <section className="ask-card" aria-label="商机查询输入">
           <form onSubmit={submit}><div className="ask-title"><span className="purple-spark"><Sparkles size={19}/></span><h2>{sessionId?"继续补充这项任务":"这次，你想查什么？"}</h2><span className="mode-badge">{starting?<><LoaderCircle size={13} className="spin"/> 数据准备中</>:meta?.agentReady?<><Sparkles size={13}/> 千问 Agent</>:meta?.aiReady?<>千问解析</>:<>{publicDemo?"公开演示 · 规则解析":"规则解析"}</>}</span></div>
             <textarea aria-label="输入商机查询需求" value={question} onChange={e=>setQuestion(e.target.value)} maxLength={1800} placeholder={clarification?"输入你的补充说明":sessionId?"例如：加上项目阶段":"例如：查今年的在途商机"} onKeyDown={e=>{if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){e.preventDefault();submit();}}}/>
-            <p className="dialogue-hint">{publicDemo?"公开演示使用浏览器内的模拟数据库，可查询并导出 Excel。":"可直接描述要查的商机，条件不明确时助手会追问。"}</p>
+            <p className="dialogue-hint">{publicDemo?"公开演示使用浏览器内的模拟数据库，可沿用当前清单按金额筛选并导出 Excel。":"可直接描述要查的商机，条件不明确时助手会追问。"}</p>
             <div className="ask-toolbar">
-              <div className="submit-wrap">{sessionId&&<button type="button" className="secondary" disabled={busy} onClick={resetTask}>新任务</button>}<span className="keyboard-hint">Ctrl + Enter</span><button className="primary" disabled={busy||starting||!meta||question.trim().length<2} type="submit">{busy?<LoaderCircle size={17} className="spin"/>:<Sparkles size={17}/>}<span>{busy?"正在执行任务":"生成商机清单"}</span></button></div>
+              <div className="submit-wrap">{(sessionId||(publicDemo&&result))&&<button type="button" className="secondary" disabled={busy} onClick={resetTask}>新任务</button>}<span className="keyboard-hint">Ctrl + Enter</span><button className="primary" disabled={busy||starting||!meta||question.trim().length<2} type="submit">{busy?<LoaderCircle size={17} className="spin"/>:<Sparkles size={17}/>}<span>{busy?"正在执行任务":"生成商机清单"}</span></button></div>
             </div></form>
           <div className="examples-row"><span>试着查</span>{visibleExamples.map(x=><button key={x.label} onClick={()=>example(x.text)} disabled={busy||starting}>{x.label}</button>)}<button className="manual-link" onClick={openEdit}>直接选择条件</button></div>
         </section>
@@ -138,7 +143,7 @@ export default function OpportunityWorkspace({request=fetch,basePath="/",publicD
           </div><div className="fields-heading"><strong>清单字段 <span>已选{draft.fields.length}项，按选择顺序导出</span></strong><button onClick={()=>setDraft(f=>({...f,fields:[...DEFAULT_FIELDS]}))}>恢复默认字段</button></div><div className="field-options">{ALL_FIELDS.map(field=><label key={field}><input type="checkbox" checked={draft.fields.includes(field)} onChange={()=>chooseField(field)}/>{field}</label>)}</div><div className="editor-footer"><p>上级团队包含全部下属团队；阶段范围包含两个端点。</p><button className="primary" disabled={busy||starting||!draft.fields.length} onClick={()=>execute({filters:draft})}>应用条件并查询</button></div>
         </section>}
         {result?<section className="results" ref={resultRef} aria-label="查询结果" aria-busy={busy}>
-          <div className="result-heading"><div><div className="result-title"><span className="result-icon"><FileSpreadsheet size={20}/></span><h2>商机清单</h2><span className="result-count">{result.totalRows}条</span></div><p>{result.filters.limit?`当前为排序后的前${result.filters.limit}条，数量、金额及导出均按此范围计算。`:'已按下列条件筛选，导出将包含全部匹配记录。'}</p></div><div className="result-actions"><button className="secondary" onClick={openEdit} disabled={busy}><SlidersHorizontal size={16}/>调整条件</button><button className="primary export" onClick={download} disabled={busy||exporting||!result.totalRows}>{exporting?<LoaderCircle className="spin" size={17}/>:<Download size={17}/>}<span>{exporting?"正在导出":"导出 Excel"}</span></button></div></div>
+          <div className="result-heading"><div><div className="result-title"><span className="result-icon"><FileSpreadsheet size={20}/></span><h2>商机清单</h2><span className="result-count">{result.totalRows}条</span></div><p>{result.queryMessage??(result.filters.limit?`当前为排序后的前${result.filters.limit}条，数量、金额及导出均按此范围计算。`:'已按下列条件筛选，导出将包含全部匹配记录。')}</p></div><div className="result-actions"><button className="secondary" onClick={openEdit} disabled={busy}><SlidersHorizontal size={16}/>调整条件</button><button className="primary export" onClick={download} disabled={busy||exporting||!result.totalRows}>{exporting?<LoaderCircle className="spin" size={17}/>:<Download size={17}/>}<span>{exporting?"正在导出":"导出 Excel"}</span></button></div></div>
           <div className="filter-chips"><span><Building2 size={14}/>{result.filters.team??result.filters.businessGroup??"全部团队"}</span>{result.filters.year&&<span><CalendarDays size={14}/>{result.filters.year}年 · {YEAR_LABELS[result.filters.yearBasis!]}</span>}<span><BriefcaseBusiness size={14}/>项目阶段 {stageText}</span>{result.filters.city&&<span className="location-chip"><MapPin size={14}/>{result.filters.city}</span>}{result.filters.province&&<span><MapPin size={14}/>{result.filters.province}</span>}{result.filters.projectName&&<span>项目名称：{result.filters.projectName}</span>}{result.filters.projectId&&<span>项目编号：{result.filters.projectId}</span>}{result.filters.commitment&&<span>承诺：{result.filters.commitment}</span>}{result.filters.tender!==null&&<span>{result.filters.tender?"需要招投标":"不需要招投标"}</span>}<button onClick={openEdit}>{result.fields.length}个字段</button></div>
           {(result.filters.amountMin!=null||result.filters.amountMax!=null)&&<div className="amount-filter-note">项目金额范围：{result.filters.amountMin!=null?money(result.filters.amountMin):"不限"} 至 {result.filters.amountMax!=null?money(result.filters.amountMax):"不限"} 元</div>}
           {(result.filters.customer||result.filters.dateFrom||result.filters.dateTo||result.filters.profitStatus||result.filters.missingPublishOnly||result.filters.sortBy||result.filters.limit)&&<div className="filter-chips business-chips">{result.filters.customer&&<span>客户：{result.filters.customer}</span>}{(result.filters.dateFrom||result.filters.dateTo)&&<span>日期：{result.filters.dateFrom??'不限'} 至 {result.filters.dateTo??'不限'}</span>}{result.filters.profitStatus&&<span>预计利润：{{loss:'负数',break_even:'零',profit:'正数'}[result.filters.profitStatus]}</span>}{result.filters.missingPublishOnly&&<span>仅招投标挂网日期缺失</span>}{result.filters.sortBy&&<span>{{expected_close:'预计成交日期',amount:'项目金额',profit:'预计利润'}[result.filters.sortBy]}{result.filters.sortDirection==='desc'?'降序':'升序'}</span>}{result.filters.limit&&<span>仅前{result.filters.limit}条</span>}</div>}

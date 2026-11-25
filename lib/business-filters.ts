@@ -33,9 +33,5 @@ export function businessPatch(base:Filters|null,raw:Record<string,unknown>,quest
   if(/下个月/.test(question)){
     const [year,month]=AS_OF.split('-').map(Number);patch.dateFrom=new Date(Date.UTC(year,month,1)).toISOString().slice(0,10);patch.dateTo=new Date(Date.UTC(year,month+1,0)).toISOString().slice(0,10);patch.year=Number(String(patch.dateFrom).slice(0,4));patch.yearBasis=/创建|录入/.test(question)?'created':/中标/.test(question)?'bid_award':/预计成交/.test(question)?'expected_close':base?.yearBasis??hint;
   }
-  const money=question.match(/(?:金额)?\s*(\d+(?:\.\d+)?)\s*(万(?:元)?|亿(?:元)?|元)\s*(?:到|至|[-—~～])\s*(\d+(?:\.\d+)?)\s*(万(?:元)?|亿(?:元)?|元)/);
-  const unit=(label:string)=>label.startsWith('万')?10000:label.startsWith('亿')?100000000:1;
-  if(money){patch.amountMin=Number(money[1])*unit(money[2]);patch.amountMax=Number(money[3])*unit(money[4]);}
-  const maximum=question.match(/(?:不超过|小于等于|至多)\s*(\d+(?:\.\d+)?)\s*(万(?:元)?|亿(?:元)?|元)/);if(maximum)patch.amountMax=Number(maximum[1])*unit(maximum[2]);
   return patch;
 }

@@ -3,7 +3,7 @@ import type {QueryResult} from "./contracts.ts";
 export const SUMMARY_DIMENSIONS={team:"所在团队",city:"项目所在市",province:"项目所在省",owner:"负责人",commitment:"业绩承诺",tender:"是否需要招投标",stage:"项目阶段"} as const;
 export type SummaryDimension=keyof typeof SUMMARY_DIMENSIONS;
 export function isResultSummaryQuestion(question:string){
-  return /这些|这批|这份|其中|它们|里面|以上|当前|刚才|上述/.test(question)&&/几个|多少|几条|几项|统计|分布|占比/.test(question)&&!/只保留|重新查询|改为查询|筛选出|导出|下载/i.test(question);
+  return /这些|这批|这份|其中|它们|里面|以上(?:这些|的)?(?:项目|商机|清单|记录)|当前|刚才|上述/.test(question)&&/几个|多少|几条|几项|统计|分布|占比/.test(question)&&!/只保留|重新查询|改为查询|筛选出|导出|下载/i.test(question);
 }
 function teamAlias(value:string){const match=value.match(/^(?:基教)?([A-E])市(?:团队)?$/i);return match?`基教${match[1].toUpperCase()}市团队`:value;}
 export function summarizeResult(full:QueryResult,dimension:SummaryDimension,value?:string){

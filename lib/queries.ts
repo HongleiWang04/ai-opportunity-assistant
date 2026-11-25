@@ -20,6 +20,7 @@ export function buildWhere(filters:Filters){
   if(f.dateTo){clauses.push(dateColumn+'<=?');args.push(f.dateTo);}
   if(f.amountMin!=null){clauses.push("p.project_amount_cents>=?");args.push(Math.round(f.amountMin*100));}
   if(f.amountMax!=null){clauses.push("p.project_amount_cents<=?");args.push(Math.round(f.amountMax*100));}
+  if(f.scopeIds!==undefined){clauses.push("p.project_id IN (SELECT value FROM json_each(?))");args.push(JSON.stringify(f.scopeIds));}
   for(const key of ["owner","province","city","district"] as const)if(f[key]){const column={owner:"u.owner_name",province:"p.province",city:"p.city",district:"p.district"}[key];clauses.push(`${column}=?`);args.push(f[key]);}
   return {where:" WHERE "+clauses.join(" AND "),args,filters:f};
 }
