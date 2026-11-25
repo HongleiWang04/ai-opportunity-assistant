@@ -1,0 +1,11 @@
+import type {Filters,QueryResult} from "./contracts.ts";
+import type {PendingFieldEdit} from "./field-edit.ts";
+import type {SummaryTarget} from "./result-subset.ts";
+export type ExportPlan={splitBy:"none"|"team";includeMissingPublishSheet:boolean;};
+export const DEFAULT_EXPORT_PLAN:ExportPlan={splitBy:"none",includeMissingPublishSheet:false};
+export type QualitySummary={passed:boolean;rowCount:number;amountTotal:number;missingPublishCount:number;teamCounts:Record<string,number>;checks:string[];};
+export type AgentStep={id:string;tool:string;title:string;status:"running"|"done"|"error";summary?:string;};
+export type HistoryItem={role:"user"|"assistant";content:string};
+export type AgentContext={filters:Filters|null;lastResultId:string|null;exportPlan:ExportPlan;history:HistoryItem[];pendingQuestion?:string;pendingFieldEdit?:PendingFieldEdit;lastSummary?:SummaryTarget;pendingSubset?:boolean;pendingProjectLookup?:boolean;};
+export type AgentReply={sessionId:string;result?:QueryResult;resultId?:string;message:string;clarification?:string;choices?:string[];quality?:QualitySummary;exportReady:boolean;exportPlan:ExportPlan;steps:AgentStep[];modelCalls:number;history?:HistoryItem[];actions?:{label:string;question:string}[];};
+export type AgentEvent={type:"session";sessionId:string}|{type:"step";step:AgentStep}|{type:"complete";reply:AgentReply}|{type:"error";message:string};

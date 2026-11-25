@@ -1,0 +1,17 @@
+{
+  "all_simulated": true,
+  "original_rows_retained": 5000,
+  "added_rows": 600,
+  "total_rows": 5600,
+  "version": "sales-diversity-v2",
+  "cities": 49,
+  "provinces": 30,
+  "owners": 100,
+  "same_name_owner_names": 12,
+  "negative_expected_profit": 111,
+  "zero_expected_profit": 75,
+  "min_amount_yuan": 0.01,
+  "max_amount_yuan": 30000000.0,
+  "shared_customer_anchor": "杭州市明德教育集团（模拟）",
+  "seed_statements": 95
+}

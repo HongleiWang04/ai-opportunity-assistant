@@ -1,0 +1,502 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "fb43b8a2-49d7-48d9-b1b1-e52ebda3fd6a",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "business_groups": {
+      "name": "business_groups",
+      "columns": {
+        "business_group_id": {
+          "name": "business_group_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "business_group_name": {
+          "name": "business_group_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "business_groups_business_group_name_unique": {
+          "name": "business_groups_business_group_name_unique",
+          "columns": [
+            "business_group_name"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "dataset_metadata": {
+      "name": "dataset_metadata",
+      "columns": {
+        "metadata_key": {
+          "name": "metadata_key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "metadata_value": {
+          "name": "metadata_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "opportunities": {
+      "name": "opportunities",
+      "columns": {
+        "project_id": {
+          "name": "project_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_id": {
+          "name": "owner_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "project_name": {
+          "name": "project_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "customer_name": {
+          "name": "customer_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "project_amount_cents": {
+          "name": "project_amount_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expected_gross_profit_cents": {
+          "name": "expected_gross_profit_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expected_profit_cents": {
+          "name": "expected_profit_cents",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "project_stage": {
+          "name": "project_stage",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expected_publish_date": {
+          "name": "expected_publish_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expected_close_date": {
+          "name": "expected_close_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "performance_commitment": {
+          "name": "performance_commitment",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requires_tender": {
+          "name": "requires_tender",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "bid_award_date": {
+          "name": "bid_award_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "province": {
+          "name": "province",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "district": {
+          "name": "district",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_date": {
+          "name": "created_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "opportunities_team_stage_close": {
+          "name": "opportunities_team_stage_close",
+          "columns": [
+            "team_id",
+            "project_stage",
+            "expected_close_date"
+          ],
+          "isUnique": false
+        },
+        "opportunities_created": {
+          "name": "opportunities_created",
+          "columns": [
+            "created_date"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "opportunities_team_id_teams_team_id_fk": {
+          "name": "opportunities_team_id_teams_team_id_fk",
+          "tableFrom": "opportunities",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "team_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "opportunities_owner_id_team_id_project_owners_owner_id_team_id_fk": {
+          "name": "opportunities_owner_id_team_id_project_owners_owner_id_team_id_fk",
+          "tableFrom": "opportunities",
+          "tableTo": "project_owners",
+          "columnsFrom": [
+            "owner_id",
+            "team_id"
+          ],
+          "columnsTo": [
+            "owner_id",
+            "team_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "valid_stage": {
+          "name": "valid_stage",
+          "value": "\"opportunities\".\"project_stage\" IN (0,20,40,60,80,90,100)"
+        },
+        "valid_commitment": {
+          "name": "valid_commitment",
+          "value": "\"opportunities\".\"performance_commitment\" IN ('力争','确保','冲刺')"
+        },
+        "valid_amount": {
+          "name": "valid_amount",
+          "value": "\"opportunities\".\"project_amount_cents\">0"
+        },
+        "valid_tender": {
+          "name": "valid_tender",
+          "value": "\"opportunities\".\"requires_tender\" IN (0,1)"
+        },
+        "valid_profit": {
+          "name": "valid_profit",
+          "value": "\"opportunities\".\"expected_profit_cents\"<=\"opportunities\".\"expected_gross_profit_cents\" AND \"opportunities\".\"expected_gross_profit_cents\"<=\"opportunities\".\"project_amount_cents\""
+        },
+        "valid_dates": {
+          "name": "valid_dates",
+          "value": "\"opportunities\".\"expected_close_date\">=\"opportunities\".\"created_date\""
+        },
+        "valid_bid": {
+          "name": "valid_bid",
+          "value": "\"opportunities\".\"requires_tender\"=1 OR (\"opportunities\".\"expected_publish_date\" IS NULL AND \"opportunities\".\"bid_award_date\" IS NULL)"
+        }
+      }
+    },
+    "project_owners": {
+      "name": "project_owners",
+      "columns": {
+        "owner_id": {
+          "name": "owner_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "owner_name": {
+          "name": "owner_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "project_owners_owner_id_team_id_unique": {
+          "name": "project_owners_owner_id_team_id_unique",
+          "columns": [
+            "owner_id",
+            "team_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "project_owners_team_id_teams_team_id_fk": {
+          "name": "project_owners_team_id_teams_team_id_fk",
+          "tableFrom": "project_owners",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "team_id"
+          ],
+          "columnsTo": [
+            "team_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "team_closure": {
+      "name": "team_closure",
+      "columns": {
+        "ancestor_team_id": {
+          "name": "ancestor_team_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "descendant_team_id": {
+          "name": "descendant_team_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "depth": {
+          "name": "depth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "team_closure_ancestor_team_id_teams_team_id_fk": {
+          "name": "team_closure_ancestor_team_id_teams_team_id_fk",
+          "tableFrom": "team_closure",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "ancestor_team_id"
+          ],
+          "columnsTo": [
+            "team_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "team_closure_descendant_team_id_teams_team_id_fk": {
+          "name": "team_closure_descendant_team_id_teams_team_id_fk",
+          "tableFrom": "team_closure",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "descendant_team_id"
+          ],
+          "columnsTo": [
+            "team_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "team_closure_ancestor_team_id_descendant_team_id_pk": {
+          "columns": [
+            "ancestor_team_id",
+            "descendant_team_id"
+          ],
+          "name": "team_closure_ancestor_team_id_descendant_team_id_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "teams": {
+      "name": "teams",
+      "columns": {
+        "team_id": {
+          "name": "team_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "business_group_id": {
+          "name": "business_group_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "parent_team_id": {
+          "name": "parent_team_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "team_name": {
+          "name": "team_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "team_code": {
+          "name": "team_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "teams_team_name_unique": {
+          "name": "teams_team_name_unique",
+          "columns": [
+            "team_name"
+          ],
+          "isUnique": true
+        },
+        "teams_team_code_unique": {
+          "name": "teams_team_code_unique",
+          "columns": [
+            "team_code"
+          ],
+          "isUnique": true
+        },
+        "teams_team_id_business_group_id_unique": {
+          "name": "teams_team_id_business_group_id_unique",
+          "columns": [
+            "team_id",
+            "business_group_id"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "teams_business_group_id_business_groups_business_group_id_fk": {
+          "name": "teams_business_group_id_business_groups_business_group_id_fk",
+          "tableFrom": "teams",
+          "tableTo": "business_groups",
+          "columnsFrom": [
+            "business_group_id"
+          ],
+          "columnsTo": [
+            "business_group_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "teams_parent_team_id_business_group_id_teams_team_id_business_group_id_fk": {
+          "name": "teams_parent_team_id_business_group_id_teams_team_id_business_group_id_fk",
+          "tableFrom": "teams",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "parent_team_id",
+            "business_group_id"
+          ],
+          "columnsTo": [
+            "team_id",
+            "business_group_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}
