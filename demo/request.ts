@@ -3,8 +3,9 @@ import {amountOnlyQuestion,amountQueryFilters,amountResultMessage,projectAmountC
 import {DATASET_AS_OF, DATASET_COUNT} from "../lib/dataset.ts";
 import {workbookBytes, exportFilename} from "../lib/excel.ts";
 import {parseRules} from "../lib/parse.ts";
-import {emptyResultFeedback, normalizeProjectLocation} from "../lib/project-lookup.ts";
+import {emptyResultFeedback, knownProjectCity, normalizeProjectLocation} from "../lib/project-lookup.ts";
 import {runQuery, type Database, type D1Statement} from "../lib/queries.ts";
+import {followUpStageQuery,namedWinCity,stageFollowUpFilters,stageFollowUpMessage} from "../lib/stage-query.ts";
 
 type SQLiteValue=string|number|null|Uint8Array;
 type SQLiteStatement={
@@ -86,15 +87,24 @@ export const demoRequest: typeof fetch = async (path, init) => {
       const question=typeof input.question==="string"?input.question:"";
       const condition=projectAmountCondition(question);
       const amount=amountOnlyQuestion(question,condition)?condition:null;
-      const base=(amount||isBareListing(question))&&input.baseFilters?validateFilters(input.baseFilters):null;
-      const parsed=question&&!amount?parseRules(question):null;
+      const prior=question&&input.baseFilters?validateFilters(input.baseFilters):null;
+      const stage=followUpStageQuery(question,prior);
+      const base=(amount||isBareListing(question))?prior:null;
+      const parsed=question&&!amount&&!stage?parseRules(question):null;
       let filters=amount?await amountQueryFilters(db,base,amount):
+        stage?await stageFollowUpFilters(db,stage):
         parsed?await normalizeProjectLocation(db,base?{...base,fields:[...ALL_FIELDS]}:parsed.filters):validateFilters(input.filters);
       if(amount&&wantsAllListingFields(question))filters={...filters,fields:[...ALL_FIELDS]};
+      const mentionedCity=namedWinCity(question);
+      if(mentionedCity){
+        const city=await knownProjectCity(db,mentionedCity);
+        if(!city)throw new Error("请核对赢单项目所在的城市。");
+        filters={...filters,city};
+      }
       const result = await runQuery(db,filters,Number(input.page ?? 1),20);
       const emptyFeedback = result.totalRows === 0 ? await emptyResultFeedback(db,filters) : undefined;
-      const queryMessage=amount?amountResultMessage(amount,result,!!base):undefined;
-      return Response.json({...result,parserMethod:parsed?.method??(amount?"rules":"manual"),notes:parsed?.notes,emptyFeedback,queryMessage});
+      const queryMessage=amount?amountResultMessage(amount,result,!!base):stage?await stageFollowUpMessage(db,stage,result):undefined;
+      return Response.json({...result,parserMethod:parsed?.method??(amount||stage?"rules":"manual"),notes:parsed?.notes,emptyFeedback,queryMessage});
     }
     if (path === "/api/export") {
       const result = await runQuery(db,input.filters,1,20,true);

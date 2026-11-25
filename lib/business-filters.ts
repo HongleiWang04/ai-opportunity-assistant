@@ -1,4 +1,5 @@
 import {AS_OF,type Filters,type YearBasis} from "./contracts.ts";
+import {explicitStageFilter} from "./stage-query.ts";
 export function needsBusinessQuery(question:string){return /(?:取消|去掉|移除).*(?:限制|筛选|条件)|从大到小|从小到大|排序|排列|取前\d+|预计利润.{0,8}(?:负数|亏损)|未填写.{0,8}挂网|下个月/.test(question);}
 export function businessPatch(base:Filters|null,raw:Record<string,unknown>,question:string,hint:YearBasis|null){
   const patch={...raw};const cancel=/取消|去掉|移除|不限/.test(question)&&/限制|筛选|条件|不限/.test(question);
@@ -20,6 +21,8 @@ export function businessPatch(base:Filters|null,raw:Record<string,unknown>,quest
   else if(/已赢单|已成交|已签单/.test(question)){patch.stageMin=patch.stageMax=100;}
   else if(/在途/.test(question)){patch.stageMin=20;patch.stageMax=80;}
   else if(/全部阶段|所有阶段|阶段不限|不限.{0,8}阶段/.test(question)){patch.stageMin=0;patch.stageMax=100;}
+  const stageFilter=explicitStageFilter(question);
+  if(stageFilter)Object.assign(patch,stageFilter);
   if(/从大到小|降序/.test(question)){patch.sortBy=/利润/.test(question)?'profit':'amount';patch.sortDirection='desc';}
   if(/从小到大|升序/.test(question)){patch.sortBy=/利润/.test(question)?'profit':'amount';patch.sortDirection='asc';}
   if(/(?:成交日期|成交时间).*(?:从近到远|升序)/.test(question)){patch.sortBy='expected_close';patch.sortDirection='asc';}

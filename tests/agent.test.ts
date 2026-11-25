@@ -27,6 +27,32 @@ const exportFile=(plan:Record<string,unknown>={}):Action=>({name:'export_excel',
 const options=(question:string,model:ModelCaller)=>({db,owner:'qa-owner',question,yearHint:'expected_close' as const,model});
 const noModel:ModelCaller=async()=>{throw new Error("明确金额或清单无需调用模型");};
 
+test('北京赢单后追问剩余项目，保留城市并严格筛出未赢单且大于40%的项目',async()=>{
+  const first=await runAgent(options('帮我查一下北京的赢单项目有哪些',scripted([query({city:'北京'}),check])));
+  assert.equal(first.result?.totalRows,1);
+  assert.equal(first.result?.filters.city,'北京市');
+  const next=await runAgent({...options('剩下的都是未赢单吗，阶段大于40%的有多少',noModel),sessionId:first.sessionId});
+  const expected=conn.prepare("SELECT project_id FROM opportunities WHERE city='北京市' AND project_stage>40 AND project_stage<100 ORDER BY expected_close_date,project_id").all().map(row=>row.project_id);
+  assert.equal(expected.length,4);
+  assert.deepEqual(next.result?.rowIds,expected);
+  assert.equal(next.result?.filters.stageMin,60);
+  assert.equal(next.result?.filters.stageMax,90);
+  assert.match(next.message,/其余 10 个项目均未赢单/);
+  assert.match(next.message,/60% 有 1 个、80% 有 1 个、90% 有 2 个/);
+  const file=await checkedExport(db,'qa-owner',next.sessionId,next.resultId!,true);
+  assert.deepEqual(file.result.rowIds,expected);
+});
+
+test('在当前北京赢单清单查未赢单不会扩大范围，剩余项目的阶段边界可显式包含',async()=>{
+  const first=await runAgent(options('查询北京的已赢单项目',scripted([query({city:'北京市'}),check])));
+  const within=await runAgent({...options('这些项目中未赢单的有几个',noModel),sessionId:first.sessionId});
+  assert.equal(within.result?.totalRows,0);
+  const second=await runAgent(options('查询北京的已赢单项目',scripted([query({city:'北京市'}),check])));
+  const inclusive=await runAgent({...options('剩下的都是未赢单吗，阶段大于等于40%的有多少',noModel),sessionId:second.sessionId});
+  assert.equal(inclusive.result?.totalRows,6);
+  assert.match(inclusive.message,/40% 有 2 个/);
+});
+
 test('上海当前清单的金额追问按 SQL 筛选，不沿用此前的城市统计',async()=>{
   const city={...emptyFilters(),city:'上海市'};
   const first=await runAgent(options('查询上海市在途商机',scripted([query(city),check])));

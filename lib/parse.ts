@@ -2,6 +2,7 @@ import {ALL_FIELDS,DEFAULT_YEAR_BASIS,TEAM_OPTIONS,GROUPS,emptyFilters,isBareLis
 import {explicitYearBasis} from "./year-basis.ts";
 import {prepareProjectFields,projectReference} from "./project-lookup.ts";
 import {applyAmountCondition,projectAmountCondition} from "./amount-query.ts";
+import {explicitStageFilter} from "./stage-query.ts";
 const aliases:Record<string,string[]>={"负责人":["项目负责人","负责人"],"所在团队":["所在团队","团队名称"],"项目编号":["项目编号"],"项目名称":["项目名称"],"客户名称":["客户名称"],"项目金额":["项目金额"],"预计毛利":["预计毛利"],"预计利润":["预计利润"],"项目阶段":["项目阶段","商机进度"],"预计挂网日期":["预计挂网日期","预计挂网时间"],"预计成交日期":["预计成交日期","预计成交时间"],"业绩承诺":["业绩承诺"],"是否需要招投标":["是否需要招投标","是否招投标"],"中标时间":["中标时间","中标日期"],"项目所在省":["项目所在省"],"项目所在市":["项目所在市"],"项目所在区县":["项目所在区县"],"事业群":["事业群"]};
 export function parseRules(question:string,yearHint:YearBasis|null=null):Parsed {
   const f=emptyFilters();const notes:string[]=[];
@@ -26,7 +27,9 @@ export function parseRules(question:string,yearHint:YearBasis|null=null):Parsed 
   if(fieldStart>=0){const tail=question.slice(fieldStart);const matches=[];for(const field of ALL_FIELDS){let pos=Infinity;for(const alias of aliases[field]??[field]){const i=tail.indexOf(alias);if(i>=0)pos=Math.min(pos,i);}if(pos!==Infinity)matches.push({field,pos});}if(matches.length)f.fields=matches.sort((a,b)=>a.pos-b.pos).map(x=>x.field);}
   const project=projectReference(question);
   const amount=projectAmountCondition(intent);
-  if(!f.team&&!f.year&&!project&&!amount&&!/商机|项目清单|业务清单/.test(intent))throw new Error("请描述商机查询需求，例如：2026年民办校团队进度20%—80%的商机。");
+  const stage=explicitStageFilter(intent);
+  if(stage)Object.assign(f,stage);
+  if(!f.team&&!f.year&&!project&&!amount&&!stage&&!/商机|项目清单|业务清单/.test(intent))throw new Error("请描述商机查询需求，例如：2026年民办校团队进度20%—80%的商机。");
   if(isBareListing(question)){f.stageMin=0;f.stageMax=100;}
   if(!project&&fieldStart<0&&wantsAllListingFields(question))f.fields=[...ALL_FIELDS];
   const filters=project?prepareProjectFields(question,{...f,...project},true):f;
